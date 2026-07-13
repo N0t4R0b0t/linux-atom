@@ -1,0 +1,8 @@
+# kernel source tree + build output
+/linux-*/
+src/
+pkg/
+*.tar.xz
+*.tar.zst
+*.pkg.tar.*
+.claude/

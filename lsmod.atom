@@ -1,0 +1,91 @@
+Module                  Size  Used by
+lz4                    12288  0
+lz4_compress           20480  1 lz4
+zram                   32768  1
+ccm                    16384  6
+snd_hda_codec_alc268    12288  1
+snd_hda_codec_realtek_lib    45056  1 snd_hda_codec_alc268
+snd_hda_codec_generic    77824  2 snd_hda_codec_alc268,snd_hda_codec_realtek_lib
+snd_hda_intel          49152  3
+joydev                 20480  0
+snd_intel_dspcfg       36864  1 snd_hda_intel
+r8169                  94208  0
+uvcvideo              118784  0
+mousedev               20480  0
+at24                   24576  0
+snd_intel_sdw_acpi     16384  1 snd_intel_dspcfg
+snd_hda_codec         143360  4 snd_hda_codec_alc268,snd_hda_intel,snd_hda_codec_generic,snd_hda_codec_realtek_lib
+iwlmvm                479232  0
+videobuf2_vmalloc      16384  1 uvcvideo
+realtek                36864  1
+mac80211             1110016  1 iwlmvm
+libarc4                12288  1 mac80211
+snd_hda_core           94208  4 snd_hda_intel,snd_hda_codec,snd_hda_codec_generic,snd_hda_codec_realtek_lib
+mdio_devres            12288  1 r8169
+uvc                    12288  1 uvcvideo
+iwlwifi               417792  1 iwlmvm
+i2c_i801               32768  0
+iTCO_wdt               12288  0
+snd_hwdep              16384  1 snd_hda_codec
+of_mdio                16384  1 mdio_devres
+videobuf2_memops       16384  1 videobuf2_vmalloc
+videobuf2_v4l2         28672  1 uvcvideo
+videobuf2_common       65536  4 uvcvideo,videobuf2_vmalloc,videobuf2_memops,videobuf2_v4l2
+acerhdf                16384  0
+coretemp               16384  0
+iTCO_vendor_support    12288  1 iTCO_wdt
+fixed_phy              12288  1 of_mdio
+pcspkr                 12288  0
+videodev              274432  2 uvcvideo,videobuf2_v4l2
+snd_pcm               135168  3 snd_hda_intel,snd_hda_codec,snd_hda_core
+i2c_mux                12288  1 i2c_i801
+platform_profile       12288  0
+cfg80211              954368  3 iwlmvm,iwlwifi,mac80211
+psmouse               176128  0
+fwnode_mdio            16384  1 of_mdio
+acpi_cpufreq           24576  0
+sparse_keymap          12288  0
+jmb38x_ms              24576  0
+mc                     61440  4 uvcvideo,videobuf2_common,videodev,videobuf2_v4l2
+snd_timer              36864  1 snd_pcm
+i2c_smbus              16384  1 i2c_i801
+libphy                122880  6 of_mdio,r8169,realtek,mdio_devres,fwnode_mdio,fixed_phy
+snd                    94208  13 snd_hda_intel,snd_hwdep,snd_hda_codec,snd_timer,snd_hda_codec_generic,snd_hda_codec_realtek_lib,snd_pcm
+mdio_bus               45056  4 libphy,of_mdio,r8169,realtek
+rfkill                 28672  5 iwlmvm,cfg80211
+memstick               20480  1 jmb38x_ms
+soundcore              12288  1 snd
+mac_hid                12288  0
+dm_mod                143360  0
+crypto_user            12288  0
+fuse                  159744  1
+nfnetlink              16384  1
+ext4                  786432  1
+crc16                  12288  1 ext4
+mbcache                12288  1 ext4
+jbd2                  131072  1 ext4
+sdhci_pci              73728  0
+serio_raw              16384  0
+sdhci_uhs2             28672  1 sdhci_pci
+atkbd                  32768  0
+ata_generic            12288  0
+libps2                 16384  2 atkbd,psmouse
+sdhci                  81920  2 sdhci_pci,sdhci_uhs2
+pata_acpi              12288  0
+vivaldi_fmap           12288  1 atkbd
+cqhci                  28672  1 sdhci_pci
+i8042                  40960  0
+ata_piix               36864  2
+mmc_core              196608  4 sdhci,sdhci_pci,cqhci,sdhci_uhs2
+lpc_ich                24576  0
+serio                  20480  9 serio_raw,atkbd,psmouse,i8042
+intel_agp              12288  0
+i915                 3153920  4
+i2c_algo_bit           12288  1 i915
+drm_buddy              20480  1 i915
+video                  61440  1 i915
+wmi                    20480  1 video
+drm_display_helper    184320  1 i915
+cec                    65536  2 drm_display_helper,i915
+ttm                    77824  1 i915
+intel_gtt              20480  2 intel_agp,i915
