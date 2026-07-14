@@ -12,8 +12,9 @@
 # archlinux32's i686 patchset here if you hit anything (see README.md).
 
 pkgbase=linux-atom
+pkgname=("$pkgbase")
 pkgver=6.19.11
-pkgrel=2
+pkgrel=3
 _srcname=linux-${pkgver}
 arch=('i686')
 url="https://www.kernel.org/"
