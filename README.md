@@ -14,8 +14,10 @@ On the in-order Bonnell Atom, instruction scheduling/alignment matters a lot, an
 1. **Tunes the processor family** to Atom (`CONFIG_MATOM`) — the biggest safe win on an
    in-order core (`-march` alone barely helps a kernel, which mostly disables SIMD and
    runtime-dispatches its hot asm).
-2. **Optionally slims** the config to just the drivers the machine actually loads, via
-   `make localmodconfig` against a captured module list.
+2. **Slims** the config (by default) to just the drivers the machine actually loads, via
+   `make localmodconfig` against a captured module list — instead of building every
+   driver a general-purpose Arch config enables as a module (nouveau, amdgpu, and
+   everything else this machine will never touch).
 
 It is **co-installable with the stock `linux`** — `pkgbase=linux-atom` and
 `CONFIG_LOCALVERSION="-atom"`, so it installs as `vmlinuz-linux-atom` with its own
@@ -32,19 +34,27 @@ modules dir. Keep the stock kernel as a fallback boot entry until you trust this
 
 ## Building
 
-Build in an i686 chroot (the pkgmirror `atom` chroot is ideal — it's already set up):
+**Through pkgmirror** (recommended): point it at this repo directly —
 
 ```bash
-# tuned only (safe):
-makepkg -s
-
-# tuned + slimmed (aggressive — see caveat):
-SLIM=1 makepkg -s
+bin/add-package.sh atom linux-atom --source git \
+  --url https://github.com/N0t4R0b0t/linux-atom.git
 ```
 
-Or wire it into pkgmirror as a local override: drop this repo's contents into
-`pkgbuilds/atom/linux-atom/` and add `linux-atom` to a group (e.g. a `kernel` group),
-then build it through the normal pipeline.
+or via the dashboard: add-package with source `git (custom repo)`. Every build
+pulls this repo fresh; edit `config`/`PKGBUILD` here and the next build picks it
+up, no local vendoring needed. Slimming is on by default (see below) — pkgmirror
+has no reliable way to pass a custom env var like `SLIM` through
+`makechrootpkg`'s fixed `--preserve-env` allowlist, so the PKGBUILD defaults to
+slimmed rather than depending on one being set.
+
+**Locally**, in an i686 chroot (the pkgmirror `atom` chroot is ideal — it's
+already set up):
+
+```bash
+makepkg -s              # tuned + slimmed (the default)
+SLIM=0 makepkg -s       # tuned only, full config — for comparison/debugging
+```
 
 Before the first build, pin the kernel version and refresh checksums:
 
@@ -57,8 +67,8 @@ updpkgsums     # fills the SKIP sha256sums
 `localmodconfig` keeps only modules present in `lsmod.atom` (captured at one point in
 time) plus dependencies. Anything **not loaded at capture** (a USB device you hadn't
 plugged in, a filesystem you rarely mount) gets dropped. Re-capture `lsmod` with all
-your hardware attached before relying on `SLIM=1`, and always keep the stock kernel as
-a fallback.
+your hardware attached before relying on the slimmed build, and always keep the stock
+kernel as a fallback.
 
 ## archlinux32 patches (production note)
 

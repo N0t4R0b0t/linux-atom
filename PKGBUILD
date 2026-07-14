@@ -1,25 +1,19 @@
 # Maintainer: N0t4R0b0t
 # linux-atom — a CPU-tuned, slimmed kernel for the Acer Aspire One (Atom N270, i686).
 #
-# Co-installable with the stock `linux` kernel: pkgbase is renamed and
-# CONFIG_LOCALVERSION="-atom", so it lands as its own /boot/vmlinuz-linux-atom and
-# /usr/lib/modules/<ver>-atom. Add a separate boot entry and keep the stock kernel
-# as a fallback until you trust it.
+# Co-installable with the stock `linux` kernel: distinct pkgbase and
+# CONFIG_LOCALVERSION="-atom", so it lands as its own vmlinuz-linux-atom + modules
+# dir and Arch's mkinitcpio install hooks generate initramfs-linux-atom.img. Keep the
+# stock kernel as the default boot entry until you trust this one.
 #
-# The config (./config) is the machine's own running config with:
-#   * Processor family = Atom  (CONFIG_MATOM, replacing the generic CONFIG_M686 /
-#     X86_GENERIC) — scheduling/alignment tuned for in-order Bonnell.
-#   * optional slimming via `make localmodconfig` against ./lsmod.atom (set SLIM=1)
-#     — keeps only the modules the machine actually loads (much smaller, faster boot,
-#     less RAM on a 1.4 GB box). See README.md for the trade-offs.
-#
-# NOTE: this template builds a vanilla kernel.org tree. For an archlinux32 machine you
-# will likely want to reconcile archlinux32's i686 linux patchset (their `linux`
-# package) on top — see README.md. Build it in the pkgmirror i686 chroot.
+# Pinned to 6.19.11 to match ./config (the machine's own running config, retuned to
+# Processor family = Atom). Build it in an i686 chroot (the pkgmirror `atom` chroot is
+# ideal). Vanilla kernel.org tree — mainline supports i686 fully; reconcile
+# archlinux32's i686 patchset here if you hit anything (see README.md).
 
 pkgbase=linux-atom
 pkgver=6.19.11
-pkgrel=1
+pkgrel=2
 _srcname=linux-${pkgver}
 arch=('i686')
 url="https://www.kernel.org/"
@@ -31,30 +25,26 @@ source=(
   config
   lsmod.atom
 )
-# Fill in real checksums once the tarball version is pinned (updpkgsums).
-sha256sums=('SKIP' 'SKIP' 'SKIP')
-
-export KBUILD_BUILD_HOST=archlinux
-export KBUILD_BUILD_USER=$pkgbase
-export KBUILD_BUILD_TIMESTAMP="$(date -Ru${SOURCE_DATE_EPOCH:+d @$SOURCE_DATE_EPOCH})"
+sha256sums=('20039d7b6b256c08be2f8fac43c3ff9a620308c703c643cf2f80c3910b9bd59b'
+            'SKIP'
+            'SKIP')
 
 prepare() {
   cd $_srcname
   echo "Setting config..."
   cp ../config .config
-
-  # Tune the processor family and normalize the config.
+  # Tune processor family -> Atom, distinct localversion, then normalize.
   scripts/config --disable CONFIG_M686 --disable CONFIG_X86_GENERIC \
                  --enable  CONFIG_MATOM \
                  --set-str CONFIG_LOCALVERSION "-atom"
-
-  # Optional: slim to only the modules this machine loads (SLIM=1). Aggressive —
-  # anything not loaded at capture time is dropped; review before trusting.
-  if [ "${SLIM:-0}" = "1" ]; then
-    echo "Slimming with localmodconfig (from ../lsmod.atom)..."
-    make LSMOD="../lsmod.atom" localmodconfig
+  # Slim to only the modules this machine loads (aggressive; see README). On by
+  # default -- an unslimmed build is only useful for local testing outside
+  # pkgmirror (which has no reliable way to pass a custom env var like SLIM
+  # through makechrootpkg's fixed --preserve-env allowlist), so build it with
+  # `SLIM=0 makepkg -s` locally if you need the full config for comparison.
+  if [ "${SLIM:-1}" != "0" ]; then
+    make LSMOD="$srcdir/lsmod.atom" localmodconfig
   fi
-
   make olddefconfig
   make -s kernelrelease > version
   echo "Prepared $pkgbase version $(<version)"
@@ -65,19 +55,18 @@ build() {
   make all
 }
 
-_package() {
-  pkgdesc="CPU-tuned (Atom) slimmed Linux kernel for the Aspire One"
+package() {
+  pkgdesc="CPU-tuned (Atom), slimmed Linux kernel for the Aspire One"
   depends=('coreutils' 'initramfs' 'kmod')
-  optdepends=('wireless-regdb: to set the correct wireless channels of your country'
-              'linux-firmware: firmware images needed for some devices')
-  provides=(KSMBD-MODULE VIRTUALBOX-GUEST-MODULES WIREGUARD-MODULE)
-  replaces=(virtualbox-guest-modules-arch wireguard-arch)
+  optdepends=('linux-firmware: firmware images for some devices'
+              'wireless-regdb: correct wireless channels for your country')
 
   cd $_srcname
   local kernver="$(<version)"
   local modulesdir="$pkgdir/usr/lib/modules/$kernver"
 
   echo "Installing boot image..."
+  # 'install' triggers the mkinitcpio pacman hooks, which read pkgbase for the name.
   install -Dm644 "$(make -s image_name)" "$modulesdir/vmlinuz"
   echo "$pkgbase" | install -Dm644 /dev/stdin "$modulesdir/pkgbase"
 
@@ -86,6 +75,3 @@ _package() {
     DEPMOD=/doesnt/exist modules_install
   rm -f "$modulesdir"/{source,build}
 }
-
-pkgname=("$pkgbase")
-package_linux-atom() { _package; }
