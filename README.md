@@ -31,6 +31,8 @@ modules dir. Keep the stock kernel as a fallback boot entry until you trust this
 | `config`      | the machine's **own running config**, retuned: `MATOM`, `-atom` localversion |
 | `lsmod.atom`  | the machine's loaded modules — input for `localmodconfig` slimming    |
 | `tune-config.sh` | reproduces the config transform from any base config               |
+| `linux-atom-syslinux.hook` | pacman hook, fires on install/upgrade of this package     |
+| `linux-atom-syslinux-update` | script the hook runs — registers the syslinux boot entry |
 
 ## Building
 
@@ -80,7 +82,69 @@ tuned config + slimming inputs; reconcile them onto archlinux32's package for th
 
 ## Installing
 
-After building/installing the package, add a bootloader entry for
-`vmlinuz-linux-atom` + `initramfs-linux-atom.img` (the machine uses **syslinux**), keep
-the stock `linux` entry as default fallback, and boot `linux-atom` to test. Once happy,
-make it the default.
+The machine boots via **syslinux**, which — unlike GRUB or systemd-boot — never
+auto-registers a newly installed kernel in its menu. This package ships a pacman
+hook (`91-linux-atom-syslinux.hook` → `linux-atom-syslinux-update`) that adds a
+`LABEL linux-atom` stanza to `/boot/syslinux/syslinux.cfg` automatically on
+install/upgrade. It's idempotent (skips if the entry already exists) and only
+ever *appends* — it never touches `DEFAULT` or edits an existing `linux-atom`
+entry, so it can't clobber hand-tuning or silently change what boots by
+default. After installing, select "Arch Linux (linux-atom, tuned)" at the
+syslinux menu to test it; the stock kernel stays the default until you
+manually flip `DEFAULT` in `syslinux.cfg`.
+
+## Benchmarks (2026-07-15, real machine)
+
+Compared the tuned+slimmed kernel (`6.19.11-atom`) against the stock
+archlinux32 kernel (`6.19.11-arch1-1.0`) on the actual Aspire One, rebooting
+between runs and waiting for load average to settle (`< 0.15`) before each
+test — an early pass showed clearly boot-noise-inflated latency (max 130ms+)
+until this discipline was applied.
+
+**Raw CPU/crypto throughput — no measurable difference**, and that's expected,
+not a failure: `sysbench`/`openssl` are the same stock binaries on both boots
+(userspace packages aren't affected by which kernel is running), and their hot
+loops never leave userspace. `-march=atom -mtune=atom` only affects code
+actually *compiled* with those flags — the kernel has little influence on raw
+arithmetic/crypto throughput, which is dominated by the CPU-bound loop itself.
+
+| sysbench | atom | stock | diff |
+|---|---|---|---|
+| CPU, 1 thread | 43.02 ev/s | 42.89 ev/s | +0.3% (noise) |
+| CPU, 2 threads | 70.13 ev/s | 69.98 ev/s | +0.2% (noise) |
+| memory | 134,817 ops/s | 133,092 ops/s | +1.3% |
+| openssl sha256 (16B) | 4849.5k | 4869.0k | -0.4% (noise) |
+| openssl aes-256-cbc (16B) | 12085.5k | 12137.8k | -0.4% (noise) |
+
+**Memory footprint — small, real, directionally consistent wins** from
+slimming, though tiny relative to the machine's 1.4GB total RAM (<1.5%
+either way):
+
+| metric | atom | stock | diff |
+|---|---|---|---|
+| `vmlinuz` size | 8.16 MB | 9.88 MB | **-17.5%** |
+| Slab | 32,028 kB | 35,568 kB | **-10%** |
+| SReclaimable | 10,896 kB | 13,956 kB | **-22%** |
+| modules loaded | 82 | 87 | 5 fewer |
+| total module memory | 10,580 KiB | 10,396 KiB | +2% (small anomaly, not chased down) |
+| `initramfs` size | 14.32 MB | 14.46 MB | -1% |
+
+**Scheduler/context-switch behavior — mixed, not a clean sweep:**
+
+| sysbench threads | atom | stock | diff |
+|---|---|---|---|
+| 2 threads/4 locks — events | 4,894 | 4,905 | tie |
+| 2 threads/4 locks — max latency | 39.37ms | 73.80ms | atom smoother tail |
+| fork+exec 3000× `/bin/true` — wall time | 10.051s | 9.554s | **stock ~5% faster** |
+| 4 threads/8 locks — events | 2,794 | 2,333 | **atom +20%** |
+| 4 threads/8 locks — avg latency | 14.33ms | 17.14ms | **atom -16%** |
+
+Under light contention it's a wash; under plain fork/exec (process creation,
+no contention) stock is actually a bit faster. The tuned kernel's real edge
+shows up specifically under **oversubscribed thread contention** (4 threads
+on this 2-thread CPU) — the scenario closest to real desktop multitasking —
+where it does ~20% more work at lower, more consistent latency. Not a
+universal win, but a believable, honest one where it plausibly matters most.
+
+Raw output saved on the machine under `~/bench/` (`bench-*.txt`,
+`mem-*.txt`, `kernel-bench-*.txt` per kernel version).
