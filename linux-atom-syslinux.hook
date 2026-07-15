@@ -1,0 +1,10 @@
+[Trigger]
+Type = Package
+Operation = Install
+Operation = Upgrade
+Target = linux-atom
+
+[Action]
+Description = Registering linux-atom in the syslinux boot menu...
+When = PostTransaction
+Exec = /usr/share/libalpm/scripts/linux-atom-syslinux-update

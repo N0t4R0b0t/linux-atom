@@ -14,7 +14,7 @@
 pkgbase=linux-atom
 pkgname=("$pkgbase")
 pkgver=6.19.11
-pkgrel=3
+pkgrel=4
 _srcname=linux-${pkgver}
 arch=('i686')
 url="https://www.kernel.org/"
@@ -25,8 +25,12 @@ source=(
   "https://cdn.kernel.org/pub/linux/kernel/v6.x/${_srcname}.tar.xz"
   config
   lsmod.atom
+  linux-atom-syslinux.hook
+  linux-atom-syslinux-update
 )
 sha256sums=('20039d7b6b256c08be2f8fac43c3ff9a620308c703c643cf2f80c3910b9bd59b'
+            'SKIP'
+            'SKIP'
             'SKIP'
             'SKIP')
 
@@ -75,4 +79,13 @@ package() {
   ZSTD_CLEVEL=19 make INSTALL_MOD_PATH="$pkgdir/usr" INSTALL_MOD_STRIP=1 \
     DEPMOD=/doesnt/exist modules_install
   rm -f "$modulesdir"/{source,build}
+
+  echo "Installing syslinux boot-entry hook..."
+  # syslinux (unlike GRUB/systemd-boot) never auto-registers a new kernel;
+  # this hook adds a LABEL stanza on install/upgrade so the tuned kernel is
+  # actually selectable after a plain `pacman -S`/`-Syu`, not just installed.
+  install -Dm644 "$srcdir/linux-atom-syslinux.hook" \
+    "$pkgdir/usr/share/libalpm/hooks/91-linux-atom-syslinux.hook"
+  install -Dm755 "$srcdir/linux-atom-syslinux-update" \
+    "$pkgdir/usr/share/libalpm/scripts/linux-atom-syslinux-update"
 }

@@ -1,0 +1,24 @@
+#!/usr/bin/env bash
+# Registers linux-atom's syslinux boot entry, idempotently. Only ever adds a
+# new LABEL stanza -- never touches DEFAULT or edits an existing linux-atom
+# entry, so hand-tuning (e.g. a changed root=) survives future upgrades.
+set -euo pipefail
+
+cfg=/boot/syslinux/syslinux.cfg
+[ -f "$cfg" ] || exit 0   # not a syslinux system -- nothing to do
+grep -q '^LABEL linux-atom$' "$cfg" && exit 0   # already registered
+
+# Reuse the existing stock-kernel entry's APPEND line (root=, options) rather
+# than hardcoding a root device, so this stays correct if that ever changes.
+append_line=$(awk '/^LABEL arch$/{f=1} f && /^[[:space:]]*APPEND/{print; exit}' "$cfg")
+[ -n "$append_line" ] || append_line="    APPEND root=/dev/sda5 rw"
+
+cp "$cfg" "$cfg.bak.$(date +%Y%m%d-%H%M%S)"
+cat >> "$cfg" <<EOF
+
+LABEL linux-atom
+    MENU LABEL Arch Linux (linux-atom, tuned)
+    LINUX ../vmlinuz-linux-atom
+$append_line
+    INITRD ../intel-ucode.img,../initramfs-linux-atom.img
+EOF
