@@ -14,7 +14,7 @@
 pkgbase=linux-atom
 pkgname=("$pkgbase")
 pkgver=6.19.11
-pkgrel=4
+pkgrel=5
 _srcname=linux-${pkgver}
 arch=('i686')
 url="https://www.kernel.org/"
@@ -49,6 +49,17 @@ prepare() {
   # `SLIM=0 makepkg -s` locally if you need the full config for comparison.
   if [ "${SLIM:-1}" != "0" ]; then
     make LSMOD="$srcdir/lsmod.atom" localmodconfig
+    # localmodconfig only keeps what's loaded at lsmod-capture time -- it
+    # dropped USB HID entirely (no USB keyboard/mouse was plugged in when
+    # lsmod.atom was captured), which isn't just "this machine doesn't need
+    # it": mkinitcpio's own `keyboard` hook expects usbhid to exist and fails
+    # the initramfs build without it ("module not found: usbhid", "the image
+    # may not be complete") -- confirmed 2026-07-15 on a real install. Force
+    # USB HID support back on regardless of what the capture saw; it's close
+    # to essential (any USB keyboard/mouse, plus early-boot input generally),
+    # not a niche driver worth the aggressive slimming applied elsewhere.
+    scripts/config --enable CONFIG_USB_HID --enable CONFIG_HID \
+                    --enable CONFIG_HID_GENERIC --enable CONFIG_USB_HIDDEV
   fi
   make olddefconfig
   make -s kernelrelease > version

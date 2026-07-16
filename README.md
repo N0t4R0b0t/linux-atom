@@ -72,6 +72,15 @@ plugged in, a filesystem you rarely mount) gets dropped. Re-capture `lsmod` with
 your hardware attached before relying on the slimmed build, and always keep the stock
 kernel as a fallback.
 
+**Real incident (2026-07-15)**: no USB keyboard/mouse was plugged in when `lsmod.atom`
+was captured, so `localmodconfig` dropped USB HID support entirely. This isn't just
+"this machine doesn't need it" — `mkinitcpio`'s own `keyboard` hook expects
+`usbhid` to exist and **fails the initramfs build without it**
+(`module not found: usbhid`, `the image may not be complete`). `pkgrel=5` force-enables
+`CONFIG_USB_HID`/`CONFIG_HID`/`CONFIG_HID_GENERIC`/`CONFIG_USB_HIDDEV` after the
+`localmodconfig` step regardless of what the capture saw — treat USB HID as close to
+essential, not a candidate for aggressive slimming, on any machine using this template.
+
 ## archlinux32 patches (production note)
 
 This template builds a **vanilla** kernel.org tree. archlinux32 carries an i686-specific
