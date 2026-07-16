@@ -33,6 +33,7 @@ modules dir. Keep the stock kernel as a fallback boot entry until you trust this
 | `tune-config.sh` | reproduces the config transform from any base config               |
 | `linux-atom-syslinux.hook` | pacman hook, fires on install/upgrade of this package     |
 | `linux-atom-syslinux-update` | script the hook runs — registers the syslinux boot entry |
+| `acerhdf.conf` | modprobe.d config — switches fan control from BIOS to kernel (`acerhdf`) |
 
 ## Building
 
@@ -157,3 +158,30 @@ universal win, but a believable, honest one where it plausibly matters most.
 
 Raw output saved on the machine under `~/bench/` (`bench-*.txt`,
 `mem-*.txt`, `kernel-bench-*.txt` per kernel version).
+
+## Fan control (acerhdf, kernel-mode)
+
+The Aspire One has a dedicated Linux fan/thermal driver, `acerhdf`
+(`CONFIG_ACERHDF=m`, already enabled in `./config` — confirmed loaded and
+reporting real temperatures on this machine, model `AOA110`, BIOS `v0.3310`).
+By default the driver only *monitors* — the BIOS still makes the actual
+fan on/off decision. `acerhdf.conf` switches that over to the kernel
+(`options acerhdf kernelmode=1`), the standard, documented way to actually
+use this driver (see its own boot dmesg message) — more responsive/tunable
+than the stock BIOS curve.
+
+Deliberately **not** overriding `fanon`/`fanoff` — acerhdf auto-detects the
+right thresholds from a per-model/per-BIOS-version table, confirmed correct
+here (`fanon=60°C`, `fanoff=53°C`, both sane vendor-calibrated values). Don't
+hand-tune those without real thermal-load data backing a change.
+
+**Checked and ruled out** (2026-07-15): a distinctly separate, software-
+controllable "palm rest" LED doesn't appear to exist on this model —
+`/sys/class/leds/` only shows keyboard lock lights, MMC activity, and the
+WiFi radio-state LED (`phy0-led`, automatically tied to radio on/off, not
+independently addressable). Matches known reports that Acer's ACPI-WMI
+implementation on Aspire-One-era hardware is incompletely supported by
+`acer-wmi`. Also **not pursuing CPU overclocking**: the N270's thermal
+design has essentially no headroom, this hardware has no safe CMOS-reset
+path if a bad BIOS setting bricks it, and the Linux-side FSB-modification
+tools that exist for this class of hardware are Windows-only.

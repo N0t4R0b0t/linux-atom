@@ -14,7 +14,7 @@
 pkgbase=linux-atom
 pkgname=("$pkgbase")
 pkgver=6.19.11
-pkgrel=5
+pkgrel=6
 _srcname=linux-${pkgver}
 arch=('i686')
 url="https://www.kernel.org/"
@@ -27,8 +27,10 @@ source=(
   lsmod.atom
   linux-atom-syslinux.hook
   linux-atom-syslinux-update
+  acerhdf.conf
 )
 sha256sums=('20039d7b6b256c08be2f8fac43c3ff9a620308c703c643cf2f80c3910b9bd59b'
+            'SKIP'
             'SKIP'
             'SKIP'
             'SKIP'
@@ -99,4 +101,12 @@ package() {
     "$pkgdir/usr/share/libalpm/hooks/91-linux-atom-syslinux.hook"
   install -Dm755 "$srcdir/linux-atom-syslinux-update" \
     "$pkgdir/usr/share/libalpm/scripts/linux-atom-syslinux-update"
+
+  echo "Installing acerhdf kernel-mode fan control config..."
+  # BIOS controls the fan by default even with acerhdf loaded; kernelmode=1
+  # hands control to the driver instead -- the documented, standard way to
+  # use it, confirmed correct on this machine (model AOA110, BIOS v0.3310)
+  # with acerhdf's own auto-detected fanon/fanoff thresholds.
+  install -Dm644 "$srcdir/acerhdf.conf" \
+    "$pkgdir/usr/lib/modprobe.d/linux-atom-acerhdf.conf"
 }
