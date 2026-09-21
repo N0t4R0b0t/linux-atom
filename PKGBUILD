@@ -1,19 +1,21 @@
 # Maintainer: N0t4R0b0t
-# linux-atom — a CPU-tuned, slimmed kernel for the Acer Aspire One (Atom N270, i686).
+# linux-atom7 — the 7.x-series branch of linux-atom: a CPU-tuned, slimmed kernel for the Acer Aspire One (Atom N270, i686).
 #
 # Co-installable with the stock `linux` kernel: distinct pkgbase and
-# CONFIG_LOCALVERSION="-atom", so it lands as its own vmlinuz-linux-atom + modules
-# dir and Arch's mkinitcpio install hooks generate initramfs-linux-atom.img. Keep the
-# stock kernel as the default boot entry until you trust this one.
+# CONFIG_LOCALVERSION="-atom7", so it lands as its own vmlinuz-linux-atom7 + modules
+# dir and Arch's mkinitcpio install hooks generate initramfs-linux-atom7.img. Also
+# co-installable with the 6.19 `linux-atom` (main branch): hook, update script and
+# modprobe conf are all renamed to avoid file conflicts. Keep a known-good kernel
+# as the default boot entry until you trust this one.
 #
-# Pinned to 6.19.11 to match ./config (the machine's own running config, retuned to
+# Started from the 6.19 branch's ./config (recapture on the machine after first boot) (the machine's own running config, retuned to
 # Processor family = Atom). Build it in an i686 chroot (the pkgmirror `atom` chroot is
 # ideal). Vanilla kernel.org tree — mainline supports i686 fully; reconcile
 # archlinux32's i686 patchset here if you hit anything (see README.md).
 
-pkgbase=linux-atom
+pkgbase=linux-atom7
 pkgname=("$pkgbase")
-pkgver=6.19.14
+pkgver=7.2.6
 pkgrel=1
 _srcname=linux-${pkgver}
 arch=('i686')
@@ -22,14 +24,14 @@ license=('GPL-2.0-only')
 makedepends=('bc' 'cpio' 'gettext' 'libelf' 'pahole' 'perl' 'python' 'tar' 'xz')
 options=('!strip')
 source=(
-  "https://cdn.kernel.org/pub/linux/kernel/v6.x/${_srcname}.tar.xz"
+  "https://cdn.kernel.org/pub/linux/kernel/v7.x/${_srcname}.tar.xz"
   config
   lsmod.atom
-  linux-atom-syslinux.hook
-  linux-atom-syslinux-update
+  linux-atom7-syslinux.hook
+  linux-atom7-syslinux-update
   acerhdf.conf
 )
-sha256sums=('cde8bf6739be4a0777fedbbba5330b8188c55680c45a922a4dfa289cbec6f185'
+sha256sums=('039aef84f2b0994aeda3f4fcfc3d02ec9d7a9bbb9020ea264c43f446c860f606'
             'SKIP'
             'SKIP'
             'SKIP'
@@ -43,7 +45,7 @@ prepare() {
   # Tune processor family -> Atom, distinct localversion, then normalize.
   scripts/config --disable CONFIG_M686 --disable CONFIG_X86_GENERIC \
                  --enable  CONFIG_MATOM \
-                 --set-str CONFIG_LOCALVERSION "-atom"
+                 --set-str CONFIG_LOCALVERSION "-atom7"
   # Slim to only the modules this machine loads (aggressive; see README). On by
   # default -- an unslimmed build is only useful for local testing outside
   # pkgmirror (which has no reliable way to pass a custom env var like SLIM
@@ -97,10 +99,10 @@ package() {
   # syslinux (unlike GRUB/systemd-boot) never auto-registers a new kernel;
   # this hook adds a LABEL stanza on install/upgrade so the tuned kernel is
   # actually selectable after a plain `pacman -S`/`-Syu`, not just installed.
-  install -Dm644 "$srcdir/linux-atom-syslinux.hook" \
-    "$pkgdir/usr/share/libalpm/hooks/91-linux-atom-syslinux.hook"
-  install -Dm755 "$srcdir/linux-atom-syslinux-update" \
-    "$pkgdir/usr/share/libalpm/scripts/linux-atom-syslinux-update"
+  install -Dm644 "$srcdir/linux-atom7-syslinux.hook" \
+    "$pkgdir/usr/share/libalpm/hooks/91-linux-atom7-syslinux.hook"
+  install -Dm755 "$srcdir/linux-atom7-syslinux-update" \
+    "$pkgdir/usr/share/libalpm/scripts/linux-atom7-syslinux-update"
 
   echo "Installing acerhdf kernel-mode fan control config..."
   # BIOS controls the fan by default even with acerhdf loaded; kernelmode=1
@@ -108,5 +110,5 @@ package() {
   # use it, confirmed correct on this machine (model AOA110, BIOS v0.3310)
   # with acerhdf's own auto-detected fanon/fanoff thresholds.
   install -Dm644 "$srcdir/acerhdf.conf" \
-    "$pkgdir/usr/lib/modprobe.d/linux-atom-acerhdf.conf"
+    "$pkgdir/usr/lib/modprobe.d/linux-atom7-acerhdf.conf"
 }
