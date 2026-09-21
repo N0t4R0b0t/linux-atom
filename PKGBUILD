@@ -8,8 +8,8 @@
 # modprobe conf are all renamed to avoid file conflicts. Keep a known-good kernel
 # as the default boot entry until you trust this one.
 #
-# Started from the 6.19 branch's ./config (recapture on the machine after first boot) (the machine's own running config, retuned to
-# Processor family = Atom). Build it in an i686 chroot (the pkgmirror `atom` chroot is
+# Started from the 6.19 branch's ./config (the machine's own running
+# config, retuned to Processor family = Atom; recapture after first boot on 7.x). Build it in an i686 chroot (the pkgmirror `atom` chroot is
 # ideal). Vanilla kernel.org tree — mainline supports i686 fully; reconcile
 # archlinux32's i686 patchset here if you hit anything (see README.md).
 
