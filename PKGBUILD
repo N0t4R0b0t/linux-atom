@@ -13,8 +13,8 @@
 
 pkgbase=linux-atom
 pkgname=("$pkgbase")
-pkgver=6.19.11
-pkgrel=6
+pkgver=6.19.14
+pkgrel=1
 _srcname=linux-${pkgver}
 arch=('i686')
 url="https://www.kernel.org/"
@@ -29,7 +29,7 @@ source=(
   linux-atom-syslinux-update
   acerhdf.conf
 )
-sha256sums=('20039d7b6b256c08be2f8fac43c3ff9a620308c703c643cf2f80c3910b9bd59b'
+sha256sums=('cde8bf6739be4a0777fedbbba5330b8188c55680c45a922a4dfa289cbec6f185'
             'SKIP'
             'SKIP'
             'SKIP'
